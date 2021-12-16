@@ -2,29 +2,49 @@ package main
 
 import (
 	"encoding/base64"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
-type ResultCode string
+type Result string
 
 const (
-	ResultCodeSuccess = "Success"
+	ResultSuccess             = "Success"
+	ResultFailedConsistency   = "FailedConsistencyCheck"
+	ResultNotAvailable        = "NotAvailable"
+	ResultNotAuthorized       = "NotAuthorized"
+	ResultNotImplemented      = "NotImplemented"
+	ResultServiceError        = "FailedServiceError"
+	ResultCSRFailedVerify     = "FailedCSRDidNotVerify"
+	ResultNotSupportedAccount = "FailedNotSupportedForAccount"
+	ResultNoExistingCSR       = "FailedNoExistingCSR"
+	ResultPendingCSR          = "FailedPendingCSR"
+	ResultNotAllowed          = "FailedNotAllowed"
+	ResultParameterError      = "FailedParameterError"
+	ResultCertAlreadyExists   = "FailedCertAlreadyExists"
+	ResultAlreadyExists       = "FailedAlreadyExists"
+	ResultFailed              = "Failed"
+	ResultRedirected          = "SuccessRedirected"
+	ResultQueued              = "SuccessQueued"
 )
 
 func archiveHandler(c *gin.Context) {
+	username := c.GetString(UsernameKey)
+
 	wrapper := NewXMLRPCWrapper(c)
 	switch wrapper.MethodName() {
 	case "archive.fetch":
-		// TODO: handle per user
-		test, _ := ioutil.ReadFile("./certs/SharedServices_PKCS12.pfx")
+		// TODO: Read from database or etc, not flat-file storage
+		test, _ := ioutil.ReadFile(fmt.Sprintf("./certs/%s/SharedServices_PKCS12.pfx", username))
 		response := base64.StdEncoding.EncodeToString(test)
 
 		members := []Member{
 			{
 				"resultCode",
-				ResultCodeSuccess,
+				ResultSuccess,
 			},
 			{
 				"resultBody",
@@ -38,7 +58,22 @@ func archiveHandler(c *gin.Context) {
 }
 
 func locateHandler(c *gin.Context) {
-	// TODO(spotlightishere): Properly parse username/etc to return accordingly
-	test, _ := ioutil.ReadFile("./certs/userCertificate.pem")
-	c.Writer.Write(test)
+	// Requests are made in the form of "/locate?someuser&type=dmSharedServices"
+	// This should typically be a key-value pair. However, our username ("someuser")
+	// has no value associated with it.
+	// We loop through all keys and assume the first key without a value is our username.
+	var username string
+	for key, value := range c.Request.URL.Query() {
+		log.Println("key", key, "values", value, "(", len(value), ")")
+		if len(value) == 1 && value[0] == "" {
+			username = key
+		}
+	}
+
+	if username == "" {
+		c.AbortWithStatus(http.StatusNotAcceptable)
+		return
+	}
+
+	c.File(fmt.Sprintf("./certs/%s/userCertificate.pem", username))
 }

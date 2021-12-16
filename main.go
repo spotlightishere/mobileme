@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 )
 
 // RequestLoggerMiddleware is taken from
@@ -23,6 +24,28 @@ func RequestLoggerMiddleware() gin.HandlerFunc {
 		}
 		log.Println(aurora.Cyan(string(body)))
 		c.Next()
+	}
+}
+
+const (
+	UsernameKey = "username"
+)
+
+func RequireAuthorization() gin.HandlerFunc {
+	// TODO: Have proper authentication
+	// Currently assumes someuser:testing1234.
+	authorization := "Basic c29tZXVzZXI6dGVzdGluZzEyMzQ="
+
+	return func(c *gin.Context) {
+		given := c.GetHeader("Authorization")
+		if given != authorization {
+			c.Header("WWW-Authenticate", "Basic realm=\"Authorization Required\"")
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		// TODO: properly update username
+		c.Set(UsernameKey, "someuser")
 	}
 }
 
@@ -48,7 +71,7 @@ func main() {
 	}
 
 	r.GET("/locate", locateHandler)
-	r.POST("/archive", archiveHandler)
+	r.POST("/archive", RequireAuthorization(), archiveHandler)
 
-	r.Run(":8080")
+	r.Run("[::]:8080")
 }
