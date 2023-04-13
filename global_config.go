@@ -28,3 +28,13 @@ func LoadGlobalConfig() {
 func baseDomain(subpath string) string {
 	return fmt.Sprintf("https://%s%s", globalConfig.BaseDomain, subpath)
 }
+
+// subdomain emits "https://<subdomain>.<basedomain>".
+func subdomain(subdomain string) string {
+	return fmt.Sprintf("https://%s.%s", subdomain, globalConfig.BaseDomain)
+}
+
+// idiskDomain emits "https://idisk.<base domain><your url>".
+func idiskDomain() string {
+	return subdomain("idisk")
+}

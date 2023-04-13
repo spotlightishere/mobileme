@@ -33,7 +33,12 @@ const (
 func archiveHandler(c *gin.Context) {
 	username := c.GetString(UsernameKey)
 
-	wrapper := NewXMLRPCWrapper(c)
+	wrapper, err := NewXMLRPCWrapper(c)
+	if err != nil {
+		c.AbortWithStatus(http.StatusNotAcceptable)
+		return
+	}
+
 	switch wrapper.MethodName() {
 	case "archive.fetch":
 		// TODO: Read from database or etc, not flat-file storage

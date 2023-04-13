@@ -58,5 +58,5 @@ func paneMessage(c *gin.Context) {
 			"iDiskStorageInMB",
 		},
 	}
-	Write(plist, c)
+	WriteOldStyle(c, plist)
 }

@@ -103,6 +103,7 @@ func main() {
 	{
 		configGroup.GET("/internetservices/dotmacpreferencespane/1/clientConfiguration.plist", dotMacPrefPaneConfig)
 		configGroup.GET("/macosx/ichat/1/clientConfiguration.plist", ichatConfig)
+		configGroup.GET("/internetservices/issupport/2_27a4cv2b6061/clientConfig.plist", issupportConfig)
 	}
 
 	// API endpoints and Web Objects
@@ -113,6 +114,7 @@ func main() {
 		{
 			infoGroup.POST("/DynamicUI/dotMacPreferencesPaneMessage", paneMessage)
 			infoGroup.POST("/Query/accountInfo", accountInfo)
+			infoGroup.POST("/XMLRPC/accountInfo", accountInfoRPC)
 		}
 	}
 

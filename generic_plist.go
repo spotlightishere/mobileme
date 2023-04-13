@@ -25,19 +25,20 @@ type GenericResponse struct {
 	StatusCode ResponseStatus `plist:"statusCode"`
 }
 
-// Write encodes the given struct as an old-style plist.
-func Write(from interface{}, to *gin.Context) {
-	e := plist.NewEncoderForFormat(to.Writer, plist.OpenStepFormat)
-	err := e.Encode(from)
+// WriteOldStyle encodes the given struct as an old-style plist.
+func WriteOldStyle(ctx *gin.Context, contents interface{}) {
+	e := plist.NewEncoderForFormat(ctx.Writer, plist.OpenStepFormat)
+	err := e.Encode(contents)
 	if err != nil {
 		// TODO: not panic
 		panic(err)
 	}
 }
 
-func WriteResponse(from interface{}, to *gin.Context) {
-	e := plist.NewEncoderForFormat(to.Writer, plist.OpenStepFormat)
-	err := e.Encode(from)
+// WriteXML encodes the given struct as an XML plist.
+func WriteXML(ctx *gin.Context, contents interface{}) {
+	e := plist.NewEncoderForFormat(ctx.Writer, plist.XMLFormat)
+	err := e.Encode(contents)
 	if err != nil {
 		// TODO: not panic
 		panic(err)

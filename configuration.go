@@ -4,6 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// dotMacPrefPaneConfig provides the configuration utilized for the MobileMe preference pane.
+// https://configuration.apple.com/internetservices/dotmacpreferencespane/1/clientConfiguration.plist
 func dotMacPrefPaneConfig(c *gin.Context) {
 	config := GenericConfig{
 		ConfigurationUrl: c.Request.URL.String(),
@@ -12,21 +14,24 @@ func dotMacPrefPaneConfig(c *gin.Context) {
 			"dotMacPreferencesPaneMessageVersion2": baseDomain("/WebObjects/Info.woa/wa/DynamicUI/dotMacPreferencesPaneMessage"),
 		},
 	}
-	Write(config, c)
+	WriteOldStyle(c, config)
 }
 
-func ichatConfig(c *gin.Context) {
-	type Language struct {
-		Default string `plist:"default"`
-		EN      string `plist:"en"`
-		JA      string `plist:"ja"`
-		FR      string `plist:"fr"`
-		DE      string `plist:"de"`
-	}
+// LanguageConfig provides specific values for localizations.
+type LanguageConfig struct {
+	Default string `plist:"default"`
+	EN      string `plist:"en"`
+	JA      string `plist:"ja"`
+	FR      string `plist:"fr"`
+	DE      string `plist:"de"`
+}
 
+// ichatConfig provides the configuration used with iChat and other services.
+// https://configuration.apple.com/macosx/ichat/1/clientConfiguration.plist
+func ichatConfig(c *gin.Context) {
 	type ChatConfig struct {
 		GenericConfig
-		LocalizedURLs map[string]Language `plist:"localizedURLs"`
+		LocalizedURLs map[string]LanguageConfig `plist:"localizedURLs"`
 	}
 
 	config := ChatConfig{
@@ -36,7 +41,7 @@ func ichatConfig(c *gin.Context) {
 				"accountInfo": baseDomain("/WebObjects/Info.woa/wa/Query/accountInfo"),
 			},
 		},
-		LocalizedURLs: map[string]Language{
+		LocalizedURLs: map[string]LanguageConfig{
 			"createTrialURL": {
 				Default: "http://support.apple.com/kb/TS4058",
 				EN:      "http://support.apple.com/kb/TS4058",
@@ -81,5 +86,41 @@ func ichatConfig(c *gin.Context) {
 			},
 		},
 	}
-	Write(config, c)
+	WriteOldStyle(c, config)
+}
+
+// issupportConfig provides the configuration necessary for ISSupport.framework to function.
+// https://configuration.apple.com/configurations/internetservices/issupport/2_27a4cv2b6061/clientConfig.plist
+func issupportConfig(c *gin.Context) {
+	config := map[string]interface{}{
+		"realmSupportEnabled": 1,
+		"applicationOverrides": map[string]map[string]string{
+			"fs2c": {
+				"iDiskURL":  subdomain("fileservices"),
+				"sIDiskURL": idiskDomain(),
+				"deltaURL":  subdomain("delta"),
+			},
+		},
+		"accountInfoURL":         baseDomain("/WebObjects/Info.woa/wa/XMLRPC/accountInfo"),
+		"accountInfoURL2":        baseDomain("/WebObjects/Info.woa/wa/Query/accountInfo"),
+		"referralLookupURL":      "http://homepage.mac.com/dotmackitsupport/Referrals",
+		"iDiskURL":               idiskDomain(),
+		"sIDiskURL":              idiskDomain(),
+		"mobilePublishConfigURL": baseDomain("/WebObjects/MobileServices.woa/xmlrpc"),
+		"commentsURL":            baseDomain("/WebObjects/WSComments.woa/xmlrpc"),
+		"indexingURL":            subdomain("webservices"),
+		"indexingBatchSize":      50,
+		"commentsBatchSize":      50,
+		"signUpURL": LanguageConfig{
+			// We don't appear to need the default key.
+			// However, it's ignored - that allows us to reuse this struct :)
+			Default: "http://www.apple.com/mobileme/share-your-world/index.html",
+			EN:      "http://www.apple.com/mobileme/share-your-world/index.html",
+			DE:      "http://www.apple.com/de/mobileme/share-your-world/index.html",
+			FR:      "http://www.apple.com/fr/mobileme/share-your-world/index.html",
+			JA:      "http://www.apple.com/jp/mobileme/share-your-world/index.html",
+		},
+		"otherParameters": map[string]string{},
+	}
+	WriteOldStyle(c, config)
 }
