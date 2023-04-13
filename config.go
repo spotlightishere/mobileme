@@ -25,6 +25,6 @@ func LoadGlobalConfig() {
 }
 
 // baseDomain emits "https://<base domain><your url>".
-func (c Config) baseDomain(subpath string) string {
-	return fmt.Sprintf("https://%s%s", c.BaseDomain, subpath)
+func baseDomain(subpath string) string {
+	return fmt.Sprintf("https://%s%s", globalConfig.BaseDomain, subpath)
 }

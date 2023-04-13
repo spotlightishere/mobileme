@@ -93,9 +93,10 @@ func (t *RoutingTable) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func main() {
 	LoadGlobalConfig()
 
-	// We need two routers:
+	// We need three domains:
 	// Our first is for "configuration.apple.com", which we leverage for several things.
 	// The second is for our actual domain with API endpoints.
+	// The third is for "certinfo.<base domain>", leveraged for certificate-related requests.
 	routingTable := NewRoutingTable()
 	config := routingTable.HandleHost("configuration.apple.com")
 	configGroup := config.Group("/configurations")
@@ -104,22 +105,22 @@ func main() {
 		configGroup.GET("/macosx/ichat/1/clientConfiguration.plist", ichatConfig)
 	}
 
-	// API endpoints
+	// API endpoints and Web Objects
 	endpoints := routingTable.HandleHost(globalConfig.BaseDomain)
-
-	// Certificates
-	endpoints.StaticFile("/dotMacCA.pem", "./certs/dotMacCA.pem")
-	endpoints.GET("/locate", locateHandler)
-	endpoints.POST("/archive", RequireAuthorization(), archiveHandler)
-
-	// Web Objects
 	webGroup := endpoints.Group("/WebObjects")
 	{
-		infoGroup := webGroup.Group("/Info.woa/wa/DynamicUI")
+		infoGroup := webGroup.Group("/Info.woa/wa")
 		{
-			infoGroup.POST("/dotMacPreferencesPaneMessage", paneMessage)
+			infoGroup.POST("/DynamicUI/dotMacPreferencesPaneMessage", paneMessage)
+			infoGroup.POST("/Query/accountInfo", accountInfo)
 		}
 	}
+
+	// Certificates
+	certificates := routingTable.HandleHost("certinfo." + globalConfig.BaseDomain)
+	certificates.StaticFile("/dotMacCA.pem", "./certs/dotMacCA.pem")
+	certificates.GET("/locate", locateHandler)
+	certificates.POST("/archive", RequireAuthorization(), archiveHandler)
 
 	// Here we go!
 	http.ListenAndServe(globalConfig.ListenAddress, routingTable)

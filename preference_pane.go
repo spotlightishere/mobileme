@@ -10,9 +10,9 @@ const (
 
 // PaneMessage describes all necessary fields within an authentication request.
 type PaneMessage struct {
-	Version    int        `plist:"version"`
-	StatusCode string     `plist:"statusCode"`
-	Service    PaneStatus `plist:"service"`
+	Version    int            `plist:"version"`
+	StatusCode string         `plist:"statusCode"`
+	Service    ResponseStatus `plist:"service"`
 
 	CanBuyMore        bool     `plist:"canBuyMore"`
 	CreationDate      string   `plist:"createDateString"`
@@ -26,18 +26,10 @@ type PaneMessage struct {
 	SubstitutionOrder []string `plist:"substitutionOrder"`
 }
 
-// PaneStatus describes valid authorization response types.
-type PaneStatus string
-
-const (
-	PaneStatusSuccess = "success"
-	PaneStatusError   = "authorizationFailed"
-)
-
 func paneMessage(c *gin.Context) {
 	plist := PaneMessage{
 		Version:    2,
-		StatusCode: PaneStatusSuccess,
+		StatusCode: ResponseStatusSuccess,
 		Service:    "dotMacPreferencesPaneMessageVersion2",
 
 		CanBuyMore:   true,

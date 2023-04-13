@@ -5,13 +5,11 @@ import (
 )
 
 func dotMacPrefPaneConfig(c *gin.Context) {
-	paneMessage := globalConfig.baseDomain("/WebObjects/Info.woa/wa/DynamicUI/dotMacPreferencesPaneMessage")
-
 	config := GenericConfig{
 		ConfigurationUrl: c.Request.URL.String(),
 		Services: map[string]string{
-			"dotMacPreferencesPaneMessage":         paneMessage,
-			"dotMacPreferencesPaneMessageVersion2": paneMessage,
+			"dotMacPreferencesPaneMessage":         baseDomain("/WebObjects/Info.woa/wa/DynamicUI/dotMacPreferencesPaneMessage"),
+			"dotMacPreferencesPaneMessageVersion2": baseDomain("/WebObjects/Info.woa/wa/DynamicUI/dotMacPreferencesPaneMessage"),
 		},
 	}
 	Write(config, c)
@@ -35,7 +33,7 @@ func ichatConfig(c *gin.Context) {
 		GenericConfig: GenericConfig{
 			ConfigurationUrl: c.Request.URL.String(),
 			Services: map[string]string{
-				"accountInfo": "https://www.mac.com/WebObjects/Info.woa/wa/Query/accountInfo",
+				"accountInfo": baseDomain("/WebObjects/Info.woa/wa/Query/accountInfo"),
 			},
 		},
 		LocalizedURLs: map[string]Language{
