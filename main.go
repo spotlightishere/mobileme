@@ -5,7 +5,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/logrusorgru/aurora/v3"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -16,8 +15,8 @@ func RequestLoggerMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var buf bytes.Buffer
 		tee := io.TeeReader(c.Request.Body, &buf)
-		body, _ := ioutil.ReadAll(tee)
-		c.Request.Body = ioutil.NopCloser(&buf)
+		body, _ := io.ReadAll(tee)
+		c.Request.Body = io.NopCloser(&buf)
 
 		for name, value := range c.Request.Header {
 			log.Print(aurora.Magenta(name), " ", "=>", " ", aurora.Yellow(value))
@@ -49,29 +48,79 @@ func RequireAuthorization() gin.HandlerFunc {
 	}
 }
 
-func main() {
-	r := gin.Default()
-	r.Use(RequestLoggerMiddleware())
+// check checks if, er, err errs.
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
 
-	// Certificates
-	r.StaticFile("/dotMacCA.pem", "./certs/dotMacCA.pem")
+// RoutingTable is a way to perform rudimentary host-based routing.
+type RoutingTable struct {
+	routes map[string]http.Handler
+}
 
-	config := r.Group("/configurations")
-	{
-		config.GET("/internetservices/dotmacpreferencespane/1/clientConfiguration.plist", dotMacPrefPaneConfig)
-		config.GET("/macosx/ichat/1/clientConfiguration.plist", ichatConfig)
+// NewRoutingTable creates a new routing table.
+func NewRoutingTable() *RoutingTable {
+	return &RoutingTable{
+		routes: make(map[string]http.Handler),
+	}
+}
+
+// HandleHost creates a new router for the provided domain.
+func (t *RoutingTable) HandleHost(host string) *gin.Engine {
+	handler := gin.Default()
+	handler.Use(RequestLoggerMiddleware())
+	t.routes[host] = handler
+	return handler
+}
+
+// ServeHTTP performs host-based routing.
+func (t *RoutingTable) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	host := r.Host
+	handler, ok := t.routes[host]
+
+	// If we don't know this host, throw a 404.
+	if !ok {
+		http.NotFound(w, r)
+		return
 	}
 
-	web := r.Group("/WebObjects")
+	// Otherwise, fall back to Gin.
+	handler.ServeHTTP(w, r)
+}
+
+func main() {
+	LoadGlobalConfig()
+
+	// We need two routers:
+	// Our first is for "configuration.apple.com", which we leverage for several things.
+	// The second is for our actual domain with API endpoints.
+	routingTable := NewRoutingTable()
+	config := routingTable.HandleHost("configuration.apple.com")
+	configGroup := config.Group("/configurations")
 	{
-		info := web.Group("/Info.woa/wa/DynamicUI")
+		configGroup.GET("/internetservices/dotmacpreferencespane/1/clientConfiguration.plist", dotMacPrefPaneConfig)
+		configGroup.GET("/macosx/ichat/1/clientConfiguration.plist", ichatConfig)
+	}
+
+	// API endpoints
+	endpoints := routingTable.HandleHost(globalConfig.BaseDomain)
+
+	// Certificates
+	endpoints.StaticFile("/dotMacCA.pem", "./certs/dotMacCA.pem")
+	endpoints.GET("/locate", locateHandler)
+	endpoints.POST("/archive", RequireAuthorization(), archiveHandler)
+
+	// Web Objects
+	webGroup := endpoints.Group("/WebObjects")
+	{
+		infoGroup := webGroup.Group("/Info.woa/wa/DynamicUI")
 		{
-			info.POST("/dotMacPreferencesPaneMessage", paneMessage)
+			infoGroup.POST("/dotMacPreferencesPaneMessage", paneMessage)
 		}
 	}
 
-	r.GET("/locate", locateHandler)
-	r.POST("/archive", RequireAuthorization(), archiveHandler)
-
-	r.Run("[::]:8080")
+	// Here we go!
+	http.ListenAndServe(globalConfig.ListenAddress, routingTable)
 }

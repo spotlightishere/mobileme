@@ -1,0 +1,4 @@
+{
+	"base_domain": "testing.internal",
+	"listen_address": "[::]:8080"
+}

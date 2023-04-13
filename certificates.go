@@ -4,9 +4,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"io/ioutil"
-	"log"
 	"net/http"
+	"os"
 )
 
 type Result string
@@ -38,7 +37,7 @@ func archiveHandler(c *gin.Context) {
 	switch wrapper.MethodName() {
 	case "archive.fetch":
 		// TODO: Read from database or etc, not flat-file storage
-		test, _ := ioutil.ReadFile(fmt.Sprintf("./certs/%s/SharedServices_PKCS12.pfx", username))
+		test, _ := os.ReadFile(fmt.Sprintf("./certs/%s/SharedServices_PKCS12.pfx", username))
 		response := base64.StdEncoding.EncodeToString(test)
 
 		members := []Member{
@@ -64,7 +63,6 @@ func locateHandler(c *gin.Context) {
 	// We loop through all keys and assume the first key without a value is our username.
 	var username string
 	for key, value := range c.Request.URL.Query() {
-		log.Println("key", key, "values", value, "(", len(value), ")")
 		if len(value) == 1 && value[0] == "" {
 			username = key
 		}

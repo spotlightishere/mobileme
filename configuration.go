@@ -5,11 +5,13 @@ import (
 )
 
 func dotMacPrefPaneConfig(c *gin.Context) {
+	paneMessage := globalConfig.baseDomain("/WebObjects/Info.woa/wa/DynamicUI/dotMacPreferencesPaneMessage")
+
 	config := GenericConfig{
 		ConfigurationUrl: c.Request.URL.String(),
 		Services: map[string]string{
-			"dotMacPreferencesPaneMessage":         "http://192.168.2.185/WebObjects/Info.woa/wa/DynamicUI/dotMacPreferencesPaneMessage",
-			"dotMacPreferencesPaneMessageVersion2": "http://192.168.2.185/WebObjects/Info.woa/wa/DynamicUI/dotMacPreferencesPaneMessage",
+			"dotMacPreferencesPaneMessage":         paneMessage,
+			"dotMacPreferencesPaneMessageVersion2": paneMessage,
 		},
 	}
 	Write(config, c)
